@@ -166,6 +166,7 @@ impl MessageHandler {
 
     async fn handle_print_batch(&self, id: String, request: BatchRequest) -> AgentMessage {
         let batch_id = request.id.clone();
+        let batch_id_for_log = batch_id.clone();
         let total = request.jobs.len();
 
         // Process batch asynchronously
@@ -275,7 +276,7 @@ impl MessageHandler {
 
             log::info!(
                 "Batch {} completed: {}/{} successful, {} failed, {} cancelled",
-                batch_id,
+                batch_id_for_log,
                 completed,
                 total,
                 failed,
