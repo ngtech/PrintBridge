@@ -111,7 +111,7 @@ pub enum DuplexMode {
 }
 
 /// Print options
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PrintOptions {
     #[serde(default)]
@@ -128,6 +128,19 @@ pub struct PrintOptions {
 
 fn default_copies() -> u32 {
     1
+}
+
+impl Default for PrintOptions {
+    fn default() -> Self {
+        Self {
+            scaling: ScalingMode::default(),
+            color_mode: ColorMode::default(),
+            copies: 1,
+            paper_size: None,
+            orientation: None,
+            duplex: DuplexMode::default(),
+        }
+    }
 }
 
 /// Print job request from client

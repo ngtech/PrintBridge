@@ -27,19 +27,30 @@ pub enum ClientMessage {
 
     /// Cancel a job
     #[serde(rename = "cancelJob")]
-    CancelJob { id: String, job_id: String },
+    CancelJob {
+        id: String,
+        #[serde(rename = "jobId")]
+        job_id: String,
+    },
 
     /// Cancel a batch
     #[serde(rename = "cancelBatch")]
-    CancelBatch { id: String, batch_id: String },
+    CancelBatch {
+        id: String,
+        #[serde(rename = "batchId")]
+        batch_id: String,
+    },
 
     /// Chunk upload start
     #[serde(rename = "uploadStart")]
     UploadStart {
         id: String,
+        #[serde(rename = "uploadId")]
         upload_id: String,
         filename: String,
+        #[serde(rename = "totalSize")]
         total_size: u64,
+        #[serde(rename = "contentType")]
         content_type: Option<ContentType>,
     },
 
@@ -47,7 +58,9 @@ pub enum ClientMessage {
     #[serde(rename = "uploadChunk")]
     UploadChunk {
         id: String,
+        #[serde(rename = "uploadId")]
         upload_id: String,
+        #[serde(rename = "chunkIndex")]
         chunk_index: u32,
         data: String, // Base64 encoded
     },
@@ -56,6 +69,7 @@ pub enum ClientMessage {
     #[serde(rename = "uploadComplete")]
     UploadComplete {
         id: String,
+        #[serde(rename = "uploadId")]
         upload_id: String,
         request: PrintRequest,
     },
@@ -103,7 +117,12 @@ pub enum AgentMessage {
 
     /// Batch accepted
     #[serde(rename = "batchAccepted")]
-    BatchAccepted { id: String, batch_id: String, total: usize },
+    BatchAccepted {
+        id: String,
+        #[serde(rename = "batchId")]
+        batch_id: String,
+        total: usize,
+    },
 
     /// Batch progress update
     #[serde(rename = "batchProgress")]
@@ -117,6 +136,7 @@ pub enum AgentMessage {
     #[serde(rename = "uploadProgress")]
     UploadProgress {
         id: String,
+        #[serde(rename = "uploadId")]
         upload_id: String,
         received: u64,
         total: u64,
@@ -124,7 +144,11 @@ pub enum AgentMessage {
 
     /// Upload ready (file saved, ready for print request)
     #[serde(rename = "uploadReady")]
-    UploadReady { id: String, upload_id: String },
+    UploadReady {
+        id: String,
+        #[serde(rename = "uploadId")]
+        upload_id: String,
+    },
 
     /// Pong response
     #[serde(rename = "pong")]

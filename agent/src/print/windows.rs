@@ -6,7 +6,7 @@ use std::process::Command;
 
 #[cfg(windows)]
 use windows::{
-    core::PCWSTR,
+    core::{PCWSTR, PWSTR},
     Win32::Graphics::Printing::*,
     Win32::Foundation::*,
 };
@@ -273,66 +273,60 @@ impl PrintEngine for WindowsPrintEngine {
             let mut printer_handle = HANDLE::default();
             let printer_name = PCWSTR::from_raw(printer_wide.as_ptr());
 
-            let result = OpenPrinterW(
+            OpenPrinterW(
                 printer_name,
                 &mut printer_handle,
                 None,
-            );
-
-            if !result.as_bool() {
-                anyhow::bail!("Failed to open printer: {}", printer);
-            }
+            ).map_err(|e| anyhow::anyhow!("Failed to open printer {}: {}", printer, e))?;
 
             // Set up document info
-            let doc_name: Vec<u16> = OsStr::new("PrintBridge Raw Document")
+            let mut doc_name: Vec<u16> = OsStr::new("PrintBridge Raw Document")
                 .encode_wide()
                 .chain(std::iter::once(0))
                 .collect();
-            let data_type: Vec<u16> = OsStr::new("RAW")
+            let mut data_type: Vec<u16> = OsStr::new("RAW")
                 .encode_wide()
                 .chain(std::iter::once(0))
                 .collect();
 
             let doc_info = DOC_INFO_1W {
-                pDocName: PCWSTR::from_raw(doc_name.as_ptr()),
-                pOutputFile: PCWSTR::null(),
-                pDatatype: PCWSTR::from_raw(data_type.as_ptr()),
+                pDocName: PWSTR::from_raw(doc_name.as_mut_ptr()),
+                pOutputFile: PWSTR::null(),
+                pDatatype: PWSTR::from_raw(data_type.as_mut_ptr()),
             };
 
             // Start document
             let job_id = StartDocPrinterW(printer_handle, 1, &doc_info as *const _ as *const _);
             if job_id == 0 {
-                ClosePrinter(printer_handle);
+                let _ = ClosePrinter(printer_handle);
                 anyhow::bail!("Failed to start print document");
             }
 
             // Start page
-            if !StartPagePrinter(printer_handle).as_bool() {
-                EndDocPrinter(printer_handle);
-                ClosePrinter(printer_handle);
-                anyhow::bail!("Failed to start print page");
+            if let Err(e) = StartPagePrinter(printer_handle) {
+                let _ = EndDocPrinter(printer_handle);
+                let _ = ClosePrinter(printer_handle);
+                anyhow::bail!("Failed to start print page: {}", e);
             }
 
             // Write data
             let mut bytes_written: u32 = 0;
-            let result = WritePrinter(
+            if let Err(e) = WritePrinter(
                 printer_handle,
                 data.as_ptr() as *const _,
                 data.len() as u32,
                 &mut bytes_written,
-            );
-
-            if !result.as_bool() {
-                EndPagePrinter(printer_handle);
-                EndDocPrinter(printer_handle);
-                ClosePrinter(printer_handle);
-                anyhow::bail!("Failed to write to printer");
+            ) {
+                let _ = EndPagePrinter(printer_handle);
+                let _ = EndDocPrinter(printer_handle);
+                let _ = ClosePrinter(printer_handle);
+                anyhow::bail!("Failed to write to printer: {}", e);
             }
 
             // End page and document
-            EndPagePrinter(printer_handle);
-            EndDocPrinter(printer_handle);
-            ClosePrinter(printer_handle);
+            let _ = EndPagePrinter(printer_handle);
+            let _ = EndDocPrinter(printer_handle);
+            let _ = ClosePrinter(printer_handle);
 
             log::info!("Sent {} bytes to printer {}", bytes_written, printer);
             Ok(())
