@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintBridge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #16213e;
+            padding: 16px 20px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .header .version {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .status-card {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .status-value {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-value.running {
+            color: #4ade80;
+        }
+
+        .status-value.stopped {
+            color: #f87171;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .info-text {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .footer {
+            padding: 12px 20px;
+            text-align: center;
+            border-top: 1px solid #0f3460;
+        }
+
+        .footer a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #16213e;
+            color: #fff;
+        }
+
+        .tab.active {
+            background: #0f3460;
+            color: #fff;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .log-container {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 2px 0;
+            color: #8b949e;
+        }
+
+        .log-entry.info {
+            color: #58a6ff;
+        }
+
+        .log-entry.error {
+            color: #f85149;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PrintBridge</h1>
+        <div class="version">Version 1.0.0</div>
+    </div>
+
+    <div class="content">
+        <div class="tabs">
+            <button class="tab active" data-tab="status">Status</button>
+            <button class="tab" data-tab="logs">Logs</button>
+            <button class="tab" data-tab="about">About</button>
+        </div>
+
+        <div id="status-tab">
+            <div class="status-card">
+                <div class="status-row">
+                    <span class="status-label">Server Status</span>
+                    <span class="status-value running" id="server-status">Running</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Port</span>
+                    <span class="status-value" id="server-port">9718</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Connections</span>
+                    <span class="status-value" id="connections">0</span>
+                </div>
+            </div>
+
+            <div class="section-title">How to Use</div>
+            <p class="info-text">
+                PrintBridge runs in the background and listens for print requests from web applications.
+                Install the SDK in your web app and connect to <code>ws://localhost:9718</code>.
+            </p>
+        </div>
+
+        <div id="logs-tab" class="hidden">
+            <div class="log-container" id="log-container">
+                <div class="log-entry info">PrintBridge started</div>
+                <div class="log-entry">WebSocket server listening on 127.0.0.1:9718</div>
+            </div>
+        </div>
+
+        <div id="about-tab" class="hidden">
+            <div class="status-card">
+                <div class="status-row">
+                    <span class="status-label">Version</span>
+                    <span class="status-value">1.0.0</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Platform</span>
+                    <span class="status-value" id="platform">Windows</span>
+                </div>
+            </div>
+
+            <div class="section-title">About</div>
+            <p class="info-text">
+                PrintBridge is an open-source solution for printing from web applications.
+                It enables batch printing, raw printing (ESC/POS, ZPL), and more without
+                browser dialogs or certificate management.
+            </p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <a href="https://github.com/CenterfireDigital/PrintBridge" target="_blank">
+            GitHub Repository
+        </a>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update tab buttons
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Show corresponding content
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('[id$="-tab"]').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(tabName + '-tab').classList.remove('hidden');
+            });
+        });
+
+        // Listen for navigation events from Tauri
+        if (window.__TAURI__) {
+            window.__TAURI__.event.listen('navigate', (event) => {
+                const tab = document.querySelector(`[data-tab="${event.payload}"]`);
+                if (tab) tab.click();
+            });
+
+            window.__TAURI__.event.listen('server-error', (event) => {
+                document.getElementById('server-status').textContent = 'Error';
+                document.getElementById('server-status').className = 'status-value stopped';
+                addLog('error', 'Server error: ' + event.payload);
+            });
+        }
+
+        function addLog(level, message) {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + level;
+            entry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+</html>

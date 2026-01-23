@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintBridge Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-dot.connected {
+            background: #22c55e;
+        }
+
+        .status-dot.disconnected {
+            background: #ef4444;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .printers-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .printer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+
+        .printer-name {
+            font-weight: 500;
+        }
+
+        .printer-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .printer-status.offline {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            padding: 16px;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+        }
+
+        .log-entry.info {
+            color: #60a5fa;
+        }
+
+        .log-entry.success {
+            color: #4ade80;
+        }
+
+        .log-entry.error {
+            color: #f87171;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PrintBridge Example</h1>
+    <p class="subtitle">Test the PrintBridge SDK</p>
+
+    <div class="card">
+        <h2>Connection Status</h2>
+        <div class="status">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="status-text">Disconnected</span>
+        </div>
+        <div style="margin-top: 16px;">
+            <button id="connect-btn" onclick="connect()">Connect</button>
+            <button id="disconnect-btn" onclick="disconnect()" disabled class="btn-secondary">Disconnect</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Available Printers</h2>
+        <div class="printers-list" id="printers-list">
+            <p style="color: #666;">Connect to see available printers</p>
+        </div>
+        <div style="margin-top: 16px;">
+            <button onclick="refreshPrinters()" id="refresh-btn" disabled>Refresh Printers</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Print Document</h2>
+        <div class="form-group">
+            <label for="url">Document URL</label>
+            <input type="text" id="url" placeholder="https://example.com/document.pdf" value="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf">
+        </div>
+        <div class="form-group">
+            <label for="printer">Printer</label>
+            <select id="printer">
+                <option value="">Default Printer</option>
+            </select>
+        </div>
+        <div class="buttons">
+            <button onclick="printDocument()" id="print-btn" disabled>Print</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Log</h2>
+        <div class="log" id="log">
+            <div class="log-entry">Ready</div>
+        </div>
+    </div>
+
+    <!-- Load SDK from CDN or local build -->
+    <script src="../../sdk/dist/printbridge.js"></script>
+    <script>
+        // Get PrintBridge from the global
+        const { PrintBridge: PB } = PrintBridge;
+
+        let bridge = null;
+
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            const connectBtn = document.getElementById('connect-btn');
+            const disconnectBtn = document.getElementById('disconnect-btn');
+            const refreshBtn = document.getElementById('refresh-btn');
+            const printBtn = document.getElementById('print-btn');
+
+            if (connected) {
+                dot.className = 'status-dot connected';
+                text.textContent = 'Connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                refreshBtn.disabled = false;
+                printBtn.disabled = false;
+            } else {
+                dot.className = 'status-dot disconnected';
+                text.textContent = 'Disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                refreshBtn.disabled = true;
+                printBtn.disabled = true;
+            }
+        }
+
+        async function connect() {
+            try {
+                log('Connecting to PrintBridge agent...');
+                bridge = new PB();
+
+                bridge.on('connected', () => {
+                    log('Connected!', 'success');
+                    updateStatus(true);
+                    refreshPrinters();
+                });
+
+                bridge.on('disconnected', (reason) => {
+                    log('Disconnected: ' + reason, 'error');
+                    updateStatus(false);
+                });
+
+                bridge.on('reconnecting', (attempt) => {
+                    log('Reconnecting... attempt ' + attempt);
+                });
+
+                bridge.on('error', (error) => {
+                    log('Error: ' + error.message, 'error');
+                });
+
+                await bridge.connect();
+            } catch (error) {
+                log('Connection failed: ' + error.message, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (bridge) {
+                bridge.disconnect();
+                bridge = null;
+            }
+        }
+
+        async function refreshPrinters() {
+            if (!bridge) return;
+
+            try {
+                const printers = await bridge.getPrinters();
+                const list = document.getElementById('printers-list');
+                const select = document.getElementById('printer');
+
+                // Update list
+                list.innerHTML = printers.map(p => `
+                    <div class="printer-item">
+                        <span class="printer-name">${p.name}${p.isDefault ? ' (Default)' : ''}</span>
+                        <span class="printer-status ${p.status}">${p.status}</span>
+                    </div>
+                `).join('');
+
+                // Update select
+                select.innerHTML = '<option value="">Default Printer</option>' +
+                    printers.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+
+                log('Found ' + printers.length + ' printers', 'success');
+            } catch (error) {
+                log('Failed to get printers: ' + error.message, 'error');
+            }
+        }
+
+        async function printDocument() {
+            if (!bridge) return;
+
+            const url = document.getElementById('url').value;
+            const printer = document.getElementById('printer').value;
+
+            if (!url) {
+                log('Please enter a document URL', 'error');
+                return;
+            }
+
+            try {
+                log('Submitting print job...');
+
+                const job = await bridge.print({
+                    url: url,
+                    printer: printer || undefined,
+                });
+
+                log('Job accepted: ' + job.id);
+
+                job.on('status', (status) => {
+                    log('Job status: ' + status);
+                });
+
+                job.on('completed', () => {
+                    log('Print completed!', 'success');
+                });
+
+                job.on('failed', (error) => {
+                    log('Print failed: ' + error.message, 'error');
+                });
+            } catch (error) {
+                log('Print request failed: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

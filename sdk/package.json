@@ -1,0 +1,55 @@
+{
+  "name": "printbridge",
+  "version": "1.0.0",
+  "description": "JavaScript SDK for PrintBridge - bulk printing for web applications",
+  "main": "dist/printbridge.js",
+  "module": "dist/printbridge.esm.js",
+  "types": "dist/types.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run build:esm && npm run build:umd && npm run build:min && npm run build:types",
+    "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/printbridge.esm.js --external:ws",
+    "build:umd": "esbuild src/index.ts --bundle --format=iife --global-name=PrintBridge --outfile=dist/printbridge.js",
+    "build:min": "esbuild src/index.ts --bundle --format=iife --global-name=PrintBridge --minify --outfile=dist/printbridge.min.js",
+    "build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CenterfireDigital/PrintBridge.git"
+  },
+  "keywords": [
+    "print",
+    "printing",
+    "printer",
+    "batch-printing",
+    "escpos",
+    "zpl",
+    "receipt-printer",
+    "label-printer",
+    "websocket"
+  ],
+  "author": "PrintBridge Contributors",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CenterfireDigital/PrintBridge/issues"
+  },
+  "homepage": "https://github.com/CenterfireDigital/PrintBridge#readme",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "optionalDependencies": {
+    "ws": "^8.16.0"
+  }
+}
