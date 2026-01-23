@@ -303,24 +303,24 @@ impl PrintEngine for WindowsPrintEngine {
             }
 
             // Start page
-            if let Err(e) = StartPagePrinter(printer_handle) {
+            if !StartPagePrinter(printer_handle).as_bool() {
                 let _ = EndDocPrinter(printer_handle);
                 let _ = ClosePrinter(printer_handle);
-                anyhow::bail!("Failed to start print page: {}", e);
+                anyhow::bail!("Failed to start print page");
             }
 
             // Write data
             let mut bytes_written: u32 = 0;
-            if let Err(e) = WritePrinter(
+            if !WritePrinter(
                 printer_handle,
                 data.as_ptr() as *const _,
                 data.len() as u32,
                 &mut bytes_written,
-            ) {
+            ).as_bool() {
                 let _ = EndPagePrinter(printer_handle);
                 let _ = EndDocPrinter(printer_handle);
                 let _ = ClosePrinter(printer_handle);
-                anyhow::bail!("Failed to write to printer: {}", e);
+                anyhow::bail!("Failed to write to printer");
             }
 
             // End page and document
