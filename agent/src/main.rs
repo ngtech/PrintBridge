@@ -3,21 +3,8 @@
     windows_subsystem = "windows"
 )]
 
-mod cache;
-mod config;
-mod download;
-mod models;
-mod print;
-mod protocol;
-mod server;
-
-#[cfg(test)]
-mod models_test;
-#[cfg(test)]
-mod protocol_test;
-
-use config::Settings;
-use server::{MessageHandler, WebSocketServer};
+use printbridge_agent::config::Settings;
+use printbridge_agent::server::{MessageHandler, WebSocketServer};
 use std::sync::Arc;
 use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
