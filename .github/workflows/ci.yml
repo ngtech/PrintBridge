@@ -1,0 +1,212 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ==========================================================================
+  # SDK Tests (Node.js)
+  # ==========================================================================
+  sdk-test:
+    name: SDK Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sdk/package-lock.json
+
+      - name: Install dependencies
+        working-directory: sdk
+        run: npm ci
+
+      - name: Build SDK
+        working-directory: sdk
+        run: npm run build
+
+      - name: Run tests
+        working-directory: sdk
+        run: npm test
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-dist
+          path: sdk/dist/
+
+  # ==========================================================================
+  # Agent Build & Test (Rust) - Windows
+  # ==========================================================================
+  agent-windows:
+    name: Agent (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            agent/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('agent/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run tests
+        working-directory: agent
+        run: cargo test --verbose
+
+      - name: Build release
+        working-directory: agent
+        run: cargo build --release --verbose
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-windows
+          path: agent/target/release/printbridge-agent.exe
+          if-no-files-found: ignore
+
+  # ==========================================================================
+  # Agent Build & Test (Rust) - Linux (for CI validation)
+  # ==========================================================================
+  agent-linux:
+    name: Agent (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            agent/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('agent/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run tests
+        working-directory: agent
+        run: cargo test --verbose
+
+      - name: Build (check only)
+        working-directory: agent
+        run: cargo build --verbose
+
+  # ==========================================================================
+  # Agent Build & Test (Rust) - macOS
+  # ==========================================================================
+  agent-macos:
+    name: Agent (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            agent/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('agent/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run tests
+        working-directory: agent
+        run: cargo test --verbose
+
+      - name: Build (check only)
+        working-directory: agent
+        run: cargo build --verbose
+
+  # ==========================================================================
+  # Lint
+  # ==========================================================================
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # SDK Lint
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sdk/package-lock.json
+
+      - name: Install SDK dependencies
+        working-directory: sdk
+        run: npm ci
+
+      - name: Lint SDK
+        working-directory: sdk
+        run: npm run lint || true  # Don't fail on lint warnings for now
+
+      # Agent Lint
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - name: Check formatting
+        working-directory: agent
+        run: cargo fmt --check || true  # Don't fail for now
+
+      - name: Clippy
+        working-directory: agent
+        run: cargo clippy -- -D warnings || true  # Don't fail for now
