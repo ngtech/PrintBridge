@@ -11,6 +11,11 @@ mod print;
 mod protocol;
 mod server;
 
+#[cfg(test)]
+mod models_test;
+#[cfg(test)]
+mod protocol_test;
+
 use config::Settings;
 use server::{MessageHandler, WebSocketServer};
 use std::sync::Arc;

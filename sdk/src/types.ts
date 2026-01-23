@@ -82,6 +82,8 @@ export interface BatchOptions {
 }
 
 export interface BatchProgress {
+  /** Batch ID */
+  batchId: string;
   /** Number of completed jobs */
   completed: number;
   /** Number of failed jobs */
@@ -93,6 +95,8 @@ export interface BatchProgress {
 }
 
 export interface BatchResult {
+  /** Batch ID */
+  batchId: string;
   /** Number of completed jobs */
   completed: number;
   /** Number of failed jobs */

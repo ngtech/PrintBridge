@@ -56,11 +56,11 @@ export class PrintJobHandle {
   on(event: 'status', handler: (status: string) => void): this;
   on(event: 'completed', handler: () => void): this;
   on(event: 'failed', handler: (error: Error) => void): this;
-  on(event: string, handler: EventHandler): this {
+  on(event: string, handler: unknown): this {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
-    this.eventHandlers.get(event)!.add(handler);
+    this.eventHandlers.get(event)!.add(handler as EventHandler);
     return this;
   }
 
@@ -92,7 +92,7 @@ export class PrintBatchHandle {
   readonly id: string;
   readonly jobs: PrintJobHandle[] = [];
 
-  constructor(id: string, total: number) {
+  constructor(id: string, _total: number) {
     this.id = id;
     // Jobs will be added as they're processed
   }
@@ -133,11 +133,11 @@ export class PrintBatchHandle {
 
   on(event: 'progress', handler: (progress: BatchProgress) => void): this;
   on(event: 'completed', handler: (result: BatchResult) => void): this;
-  on(event: string, handler: EventHandler): this {
+  on(event: string, handler: unknown): this {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
-    this.eventHandlers.get(event)!.add(handler);
+    this.eventHandlers.get(event)!.add(handler as EventHandler);
     return this;
   }
 
@@ -342,11 +342,11 @@ export class PrintBridge {
   on(event: 'disconnected', handler: (reason: string) => void): this;
   on(event: 'reconnecting', handler: (attempt: number) => void): this;
   on(event: 'error', handler: (error: Error) => void): this;
-  on(event: string, handler: EventHandler): this {
+  on(event: string, handler: unknown): this {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
-    this.eventHandlers.get(event)!.add(handler);
+    this.eventHandlers.get(event)!.add(handler as EventHandler);
     return this;
   }
 
@@ -382,29 +382,31 @@ export class PrintBridge {
   }
 
   private handleMessage(message: AgentMessage): void {
+    const msg = message as unknown as Record<string, unknown>;
+
     switch (message.type) {
       case 'welcome':
         // Connection established
         break;
 
       case 'status':
-        this.resolveRequest(message.id!, (message as { status: AgentStatus }).status);
+        this.resolveRequest(msg.id as string, msg.status as AgentStatus);
         break;
 
       case 'printers':
-        this.resolveRequest(message.id!, (message as { printers: PrinterInfo[] }).printers);
+        this.resolveRequest(msg.id as string, msg.printers as PrinterInfo[]);
         break;
 
       case 'jobAccepted': {
-        const job = (message as { job: PrintJob }).job;
+        const job = msg.job as PrintJob;
         const handle = new PrintJobHandle(job);
         this.jobHandles.set(job.id, handle);
-        this.resolveRequest(message.id!, handle);
+        this.resolveRequest(msg.id as string, handle);
         break;
       }
 
       case 'jobStatus': {
-        const job = (message as { job: PrintJob }).job;
+        const job = msg.job as PrintJob;
         const handle = this.jobHandles.get(job.id);
         if (handle) {
           handle._update(job);
@@ -413,7 +415,7 @@ export class PrintBridge {
       }
 
       case 'jobCompleted': {
-        const job = (message as { job: PrintJob }).job;
+        const job = msg.job as PrintJob;
         const handle = this.jobHandles.get(job.id);
         if (handle) {
           handle._update(job);
@@ -422,7 +424,8 @@ export class PrintBridge {
       }
 
       case 'jobFailed': {
-        const { job, error } = message as { job: PrintJob; error: string };
+        const job = msg.job as PrintJob;
+        const error = msg.error as string;
         const handle = this.jobHandles.get(job.id);
         if (handle) {
           handle._update({ ...job, status: 'failed', error });
@@ -436,7 +439,7 @@ export class PrintBridge {
       }
 
       case 'batchProgress': {
-        const progress = (message as { progress: BatchProgress }).progress;
+        const progress = msg.progress as BatchProgress;
         const handle = this.batchHandles.get(progress.batchId);
         if (handle) {
           handle._onProgress(progress);
@@ -445,7 +448,7 @@ export class PrintBridge {
       }
 
       case 'batchCompleted': {
-        const result = (message as { result: BatchResult }).result;
+        const result = msg.result as BatchResult;
         const handle = this.batchHandles.get(result.batchId);
         if (handle) {
           handle._onComplete(result);
@@ -459,16 +462,17 @@ export class PrintBridge {
         break;
 
       case 'uploadReady':
-        this.resolveRequest(message.id!, message.uploadId);
+        this.resolveRequest(msg.id as string, msg.uploadId);
         break;
 
       case 'pong':
-        this.resolveRequest(message.id!, undefined);
+        this.resolveRequest(msg.id as string, undefined);
         break;
 
       case 'error': {
-        const { code, message: errorMessage } = message as { code: string; message: string };
-        this.rejectRequest(message.id!, new Error(`${code}: ${errorMessage}`));
+        const code = msg.code as string;
+        const errorMessage = msg.message as string;
+        this.rejectRequest(msg.id as string, new Error(`${code}: ${errorMessage}`));
         break;
       }
     }
