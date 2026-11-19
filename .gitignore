@@ -3,9 +3,6 @@
 .env.*
 *.local
 
-# Documentation (internal planning docs)
-docs/
-
 # Rust
 agent/target/
 **/*.rs.bk
