@@ -51,6 +51,6 @@
     "vitest": "^1.2.0"
   },
   "optionalDependencies": {
-    "ws": "^8.16.0"
+    "ws": "^8.23.0"
   }
 }
