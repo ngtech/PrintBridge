@@ -45,4 +45,14 @@ Poll for `queued`, `preparing`, `printing`, `sumatraAccepted`, `failed`, `cancel
 
 ## Browser demo
 
-After building the SDK, from repository root run `python -m http.server 8080 --bind 127.0.0.1` (or `py -m http.server 8080 --bind 127.0.0.1` on Windows). Open `http://127.0.0.1:8080/examples/labels/`; add that exact origin to the local settings temporarily. Pair, list queues, load profiles, submit a PDF from an approved HTTPS origin, and poll status with the same job ID. Loading the demo doesn't send a print request. Test against a pilot queue and remove the demo origin when finished.
+After building the SDK, run this from the repository root in PowerShell. The server root contains only the demo and its browser bundle.
+
+~~~powershell
+$demoRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("PrintBridgeDemo-" + [guid]::NewGuid())
+New-Item -ItemType Directory -Path "$demoRoot\examples\labels","$demoRoot\sdk\dist" -ErrorAction Stop | Out-Null
+Copy-Item -LiteralPath examples\labels\index.html,examples\labels\demo.js -Destination "$demoRoot\examples\labels" -ErrorAction Stop
+Copy-Item -LiteralPath sdk\dist\printbridge.js -Destination "$demoRoot\sdk\dist" -ErrorAction Stop
+py -m http.server 8080 --bind 127.0.0.1 --directory "$demoRoot"
+~~~
+
+Use `python` in place of `py` if Python is installed without the Windows launcher. Open `http://127.0.0.1:8080/examples/labels/` and add `http://127.0.0.1:8080` to `trustedOrigins` in the local settings. Restart the tray agent, pair from **Label setup and pairing**, and check **Agent status**, **List queues**, and **Load profiles**. The browser uses an authenticated loopback WebSocket (`ws://`) from a secure-context page. Loading the demo doesn't send a print request. To print, use a pilot queue and a PDF from an approved HTTPS origin. Remove the demo origin when finished.
