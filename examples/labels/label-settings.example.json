@@ -1,0 +1,27 @@
+{
+  "trustedOrigins": [
+    "https://stockman.example.com",
+    "http://127.0.0.1:8080"
+  ],
+  "documentOrigins": [
+    "https://labels.example.com"
+  ],
+  "profiles": {
+    "meadows-small": {
+      "printer": "Example Epson Queue - 68x31",
+      "widthMm": 68,
+      "heightMm": 31,
+      "scale": "none",
+      "autoRotate": false,
+      "copies": 1
+    },
+    "meadows-large": {
+      "printer": "Example Epson Queue - 100x45",
+      "widthMm": 100,
+      "heightMm": 45,
+      "scale": "none",
+      "autoRotate": false,
+      "copies": 1
+    }
+  }
+}

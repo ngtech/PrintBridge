@@ -1,140 +1,101 @@
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
+#![cfg_attr(all(not(debug_assertions), target_os = "windows"), windows_subsystem = "windows")]
 
-use printbridge_agent::config::Settings;
-use printbridge_agent::server::{MessageHandler, WebSocketServer};
-use std::sync::Arc;
-use tauri::{
-    CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
-    WindowEvent,
-};
+use printbridge_agent::labels::{serve, LabelSettings, Pairing, PAIRING_PORT};
+use serde::Serialize;
+use std::{collections::BTreeMap, sync::{Arc, Mutex}};
+use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, WindowEvent};
+
+#[derive(Default)]
+struct Setup {
+    status: String,
+    pairing: Option<Arc<Pairing>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SetupDetails {
+    status: String,
+    settings_path: String,
+    endpoint: String,
+    tokens: BTreeMap<String, String>,
+}
+
+#[tauri::command]
+fn label_setup(state: tauri::State<'_, Arc<Mutex<Setup>>>, window: tauri::Window) -> Result<SetupDetails, String> {
+    if window.label() != "main" {
+        return Err("Pairing is available only in the local setup window".into());
+    }
+    let state = state.lock().map_err(|_| "Cannot read agent setup")?;
+    Ok(SetupDetails {
+        status: state.status.clone(),
+        settings_path: LabelSettings::directory().map(|path| path.join("label-settings.json").display().to_string())
+            .unwrap_or_else(|_| "Local application directory unavailable".into()),
+        endpoint: format!("ws://127.0.0.1:{PAIRING_PORT}/labels"),
+        tokens: state.pairing.as_ref().map_or_else(BTreeMap::new, |pairing| pairing.local_tokens()),
+    })
+}
+
+fn show_setup(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
 
 fn main() {
-    // Initialize logging
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format_timestamp_millis()
-        .init();
-
-    log::info!("PrintBridge Agent v{} starting...", env!("CARGO_PKG_VERSION"));
-
-    // Load settings
-    let settings = match Settings::load() {
-        Ok(s) => Arc::new(s),
-        Err(e) => {
-            log::error!("Failed to load settings: {}", e);
-            eprintln!("Failed to load settings: {}", e);
-            std::process::exit(1);
-        }
-    };
-
-    // Create system tray menu
-    let tray_menu = create_tray_menu();
-    let system_tray = SystemTray::new().with_menu(tray_menu);
-
-    // Build Tauri application
+    env_logger::Builder::new().filter_level(log::LevelFilter::Off)
+        .filter_module("printbridge_agent", log::LevelFilter::Info).init();
+    let state = Arc::new(Mutex::new(Setup { status: "Starting…".into(), pairing: None }));
+    let tray = SystemTray::new().with_menu(SystemTrayMenu::new()
+        .add_item(CustomMenuItem::new("setup", "Label setup and pairing"))
+        .add_item(CustomMenuItem::new("quit", "Quit PrintBridge")));
     tauri::Builder::default()
-        .system_tray(system_tray)
-        .on_system_tray_event(handle_tray_event)
+        .manage(state.clone())
+        .invoke_handler(tauri::generate_handler![label_setup])
+        .system_tray(tray)
+        .on_system_tray_event(|app, event| match event {
+            SystemTrayEvent::LeftClick { .. } => show_setup(app),
+            SystemTrayEvent::MenuItemClick { id, .. } if id == "setup" => show_setup(app),
+            SystemTrayEvent::MenuItemClick { id, .. } if id == "quit" => app.exit(0),
+            _ => {}
+        })
         .on_window_event(|event| {
-            // Hide window instead of closing
             if let WindowEvent::CloseRequested { api, .. } = event.event() {
-                event.window().hide().unwrap();
+                let _ = event.window().hide();
                 api.prevent_close();
             }
         })
         .setup(move |app| {
-            let settings = settings.clone();
             let app_handle = app.handle();
-
-            // Start WebSocket server in background
+            let state = state.clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = start_server(settings).await {
-                    log::error!("WebSocket server error: {}", e);
-
-                    // Notify user of error
-                    if let Some(window) = app_handle.get_window("main") {
-                        let _ = window.emit("server-error", e.to_string());
+                let run = async {
+                    let settings = Arc::new(LabelSettings::load()?);
+                    let pairing = Arc::new(Pairing::new(&settings));
+                    serve(settings, pairing.clone(), || {
+                        if let Ok(mut ui) = state.lock() {
+                            ui.status = if pairing.local_tokens().is_empty() {
+                                "Listening; configure a trusted origin to enable pairing"
+                            } else {
+                                "Listening; select the origin you want to pair"
+                            }.into();
+                            ui.pairing = Some(pairing);
+                        }
+                        let _ = app_handle.emit_all("label-setup-changed", ());
+                    }).await
+                };
+                if let Err(error) = run.await {
+                    log::error!("Label agent startup/server error: {error:#}");
+                    if let Ok(mut ui) = state.lock() {
+                        ui.status = format!("{error:#}");
+                        ui.pairing = None;
                     }
+                    let _ = app_handle.emit_all("label-setup-changed", ());
+                    show_setup(&app_handle);
                 }
             });
-
-            // Hide the main window by default (runs in tray)
-            if let Some(window) = app.get_window("main") {
-                let _ = window.hide();
-            }
-
-            log::info!("PrintBridge Agent started successfully");
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("Error running PrintBridge");
-}
-
-fn create_tray_menu() -> SystemTrayMenu {
-    SystemTrayMenu::new()
-        .add_item(CustomMenuItem::new("status", "Status: Running").disabled())
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("settings", "Settings"))
-        .add_item(CustomMenuItem::new("logs", "View Logs"))
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("about", "About PrintBridge"))
-        .add_item(CustomMenuItem::new("quit", "Quit"))
-}
-
-fn handle_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
-    match event {
-        SystemTrayEvent::LeftClick { .. } => {
-            // Show/hide main window on left click
-            if let Some(window) = app.get_window("main") {
-                if window.is_visible().unwrap_or(false) {
-                    let _ = window.hide();
-                } else {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-        }
-        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-            "settings" => {
-                if let Some(window) = app.get_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                    let _ = window.emit("navigate", "settings");
-                }
-            }
-            "logs" => {
-                if let Some(window) = app.get_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                    let _ = window.emit("navigate", "logs");
-                }
-            }
-            "about" => {
-                if let Some(window) = app.get_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                    let _ = window.emit("navigate", "about");
-                }
-            }
-            "quit" => {
-                log::info!("User requested quit");
-                std::process::exit(0);
-            }
-            _ => {}
-        },
-        _ => {}
-    }
-}
-
-async fn start_server(settings: Arc<Settings>) -> anyhow::Result<()> {
-    // Create message handler
-    let handler = Arc::new(MessageHandler::new(settings.clone())?);
-
-    // Create and start WebSocket server
-    let server = WebSocketServer::new(settings, handler);
-    server.start().await?;
-
-    Ok(())
 }

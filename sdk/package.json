@@ -4,7 +4,7 @@
   "description": "JavaScript SDK for PrintBridge - bulk printing for web applications",
   "main": "dist/printbridge.js",
   "module": "dist/printbridge.esm.js",
-  "types": "dist/types.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
@@ -15,6 +15,7 @@
     "build:min": "esbuild src/index.ts --bundle --format=iife --global-name=PrintBridge --minify --outfile=dist/printbridge.min.js",
     "build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "test": "vitest run",
+    "test:labels": "node --test test/labels.test.mjs ../scripts/calibration.test.mjs",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "npm run build"

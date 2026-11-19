@@ -5,6 +5,7 @@
 pub mod cache;
 pub mod config;
 pub mod download;
+pub mod labels;
 pub mod models;
 pub mod print;
 pub mod protocol;

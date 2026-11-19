@@ -1,0 +1,44 @@
+name: PDF label validation
+
+on:
+  push:
+    branches: [feature/stockman-label-printing]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: sdk/package-lock.json
+      - working-directory: sdk
+        run: |
+          npm ci
+          npm test
+          npm run test:labels
+          npm run build
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - working-directory: agent
+        run: cargo test --lib
+      - run: cargo install tauri-cli --version "^1" --locked
+      - working-directory: agent
+        run: cargo tauri build --bundles nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: printbridge-windows-nsis
+          path: agent/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error

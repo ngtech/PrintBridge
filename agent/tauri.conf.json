@@ -11,15 +11,7 @@
     "version": "1.0.0"
   },
   "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "open": true
-      },
-      "notification": {
-        "all": true
-      }
-    },
+    "allowlist": { "all": false },
     "bundle": {
       "active": true,
       "targets": "all",
@@ -31,9 +23,6 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "resources": [
-        "binaries/*"
-      ],
       "windows": {
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
@@ -41,15 +30,15 @@
       }
     },
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; form-action 'none'"
     },
     "windows": [
       {
         "label": "main",
         "title": "PrintBridge",
-        "width": 480,
-        "height": 360,
-        "resizable": false,
+        "width": 560,
+        "height": 460,
+        "resizable": true,
         "fullscreen": false,
         "visible": false,
         "center": true,

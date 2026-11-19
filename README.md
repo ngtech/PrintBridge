@@ -1,5 +1,7 @@
 # PrintBridge
 
+**Stockman label development branch:** Use the paired PDF label API and `LabelPrintBridge` SDK described in [Windows setup](docs/WINDOWS_SETUP.md), [printer profiles](docs/PRINTING_PROFILES.md), [calibration](docs/CALIBRATION.md) and [integration](docs/STOCKMAN_INTEGRATION.md). The upstream README below describes the original project; its legacy browser protocol, non-PDF routes and zero-configuration claims do not apply to this agent. See the [upstream audit](docs/UPSTREAM_AUDIT.md).
+
 **Open-source bulk printing for web applications.**
 
 PrintBridge enables web applications to print documents directly to local printers without browser dialogs, certificate management, or memory-bloating base64 transfers. Print 100 invoices with one click. Send shipping labels directly to thermal printers. Automate overnight print jobs.

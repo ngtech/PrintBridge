@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PrintBridge PDF Label Demo</title>
+<main>
+  <h1>PrintBridge PDF Label Demo</h1>
+  <p>Open PrintBridge’s tray setup and reveal the code for this page’s origin.</p>
+  <p><label>Pairing code <input id="token" type="password" autocomplete="off"></label>
+    <button id="connect" type="button">Connect</button></p>
+  <p><button id="agent" type="button">Agent status</button>
+    <button id="printers" type="button">List queues</button>
+    <button id="profiles" type="button">Load profiles</button></p>
+  <p><label>Profile <select id="profile"></select></label></p>
+  <p><label>Short-lived PDF URL <input id="document" type="url" autocomplete="off" size="60"></label></p>
+  <p><label>Copies (blank uses profile) <input id="copies" type="number" min="1" max="20"></label></p>
+  <p><label>Job ID <input id="job" autocomplete="off"></label>
+    <button id="new-id" type="button">New ID</button></p>
+  <p>For a retry, keep the same ID, URL, profile and copies. A new ID can print another label.</p>
+  <button id="submit" type="button">Submit PDF</button>
+  <button id="status" type="button">Job status</button>
+  <button id="cancel" type="button">Cancel before dispatch</button>
+  <pre id="result" aria-live="polite"></pre>
+</main>
+<script src="../../sdk/dist/printbridge.js"></script>
+<script src="demo.js"></script>
+</html>

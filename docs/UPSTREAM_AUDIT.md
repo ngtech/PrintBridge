@@ -16,7 +16,7 @@ Scope: [CenterfireDigital/PrintBridge](https://github.com/CenterfireDigital/Prin
 
 ## Baseline checks
 
-- Checked GitHub access with the authenticated connector: login `ngtech`, upstream readable; target returned 404. Shell Git could not resolve GitHub, `gh` was absent, and the browser host was unavailable for creating a fork. Imported a shallow local checkout of the original commit and verified all blobs, the tree and commit hashes. `git fsck --full` passed.
+- Checked GitHub access with the authenticated connector: login `ngtech`, upstream readable; target initially returned 404. Shell Git could not resolve GitHub and `gh` was absent. Imported a shallow local checkout of the original commit and verified all blobs, the tree and commit hashes. `git fsck --full` passed. Later created the proper `ngtech/PrintBridge` fork in signed-in Safari and confirmed write access and matching `main` via the connector.
 - `cargo test --manifest-path agent/Cargo.toml`: blocked because Cargo is not installed. Agent compile, Windows launch, installer and printer behavior were not verified.
 - `cd sdk && npm ci --offline`: blocked by missing cached tarballs (first reported: `word-wrap@1.2.5`). Upstream Vitest and esbuild checks could not run on this host.
 

@@ -1,0 +1,8 @@
+:root { font: 15px system-ui, sans-serif; color-scheme: light dark; }
+main { max-width: 540px; margin: 20px auto; padding: 0 12px; }
+h1 { font-size: 24px; }
+h2 { font-size: 18px; margin-top: 24px; }
+input { box-sizing: border-box; width: 100%; font-family: monospace; }
+select { max-width: 70%; }
+button { margin: 0 0 8px 4px; }
+p { overflow-wrap: anywhere; }

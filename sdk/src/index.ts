@@ -21,6 +21,8 @@
  */
 
 export { PrintBridge, PrintJobHandle, PrintBatchHandle } from './client';
+export { LabelPrintBridge, LabelApiError } from './labels';
+export type { LabelAgentStatus, LabelJob, LabelJobState, LabelProfile, LabelSubmission } from './labels';
 
 export type {
   PrintBridgeOptions,
